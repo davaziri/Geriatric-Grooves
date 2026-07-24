@@ -37,9 +37,9 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: SMTP_USER
+      - key: SENDGRID_API_KEY
         sync: false
-      - key: SMTP_APP_PASSWORD
+      - key: EMAIL_FROM
         sync: false
       - key: FRONTEND_ORIGIN
         fromService:

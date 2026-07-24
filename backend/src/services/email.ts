@@ -1,29 +1,27 @@
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_APP_PASSWORD = process.env.SMTP_APP_PASSWORD;
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const EMAIL_FROM = process.env.EMAIL_FROM;
 
-// Uses the operator's own Gmail account (via an App Password) rather than a
-// transactional email service, since those require verifying a custom
-// domain to send to arbitrary recipients — this app intentionally has none.
-const transporter =
-  SMTP_USER && SMTP_APP_PASSWORD
-    ? nodemailer.createTransport({
-        service: "gmail",
-        auth: { user: SMTP_USER, pass: SMTP_APP_PASSWORD },
-      })
-    : null;
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+}
 
+// Sends over HTTPS via SendGrid's API rather than raw SMTP. Most cloud
+// hosts (Render's free tier included) can't route outbound SMTP to Gmail
+// at all — connections fail with ENETUNREACH — but outbound HTTPS always
+// works, so this sidesteps the problem entirely. EMAIL_FROM must be a
+// SendGrid-verified sender (Single Sender Verification, no domain needed).
 export async function sendMagicLinkEmail(email: string, magicLink: string): Promise<void> {
-  if (!transporter) {
+  if (!SENDGRID_API_KEY || !EMAIL_FROM) {
     console.log(`\n[dev] Magic link for ${email}:\n  ${magicLink}\n`);
     return;
   }
 
   try {
-    await transporter.sendMail({
-      from: `"Geriatric Grooves" <${SMTP_USER}>`,
+    await sgMail.send({
       to: email,
+      from: EMAIL_FROM,
       subject: "Your Geriatric Grooves sign-in link",
       text: `Tap this link to sign in:\n\n${magicLink}\n\nThis link works once and expires in 15 minutes. If you didn't request this, you can ignore this email.`,
       html: `<p>Tap this link to sign in:</p><p><a href="${magicLink}">${magicLink}</a></p><p>This link works once and expires in 15 minutes. If you didn't request this, you can ignore this email.</p>`,
