@@ -8,12 +8,19 @@
 # database separately and paste its connection string into DATABASE_URL
 # below once the service exists (marked `sync: false`, so Render won't
 # try to manage it and won't ever see the value except in your dashboard).
+#
+# `npm install --include=dev` (rather than plain `npm install`) is required
+# in both buildCommands: Render sets NODE_ENV=production during the build
+# itself, and npm's default behavior under that flag is to skip
+# devDependencies entirely — which breaks the TypeScript build step, since
+# @types/* packages (and, for the frontend, vite/tailwind/etc.) all live
+# there.
 services:
   - type: web
     name: geriatric-grooves-backend
     env: node
     plan: free
-    buildCommand: npm install && npm run build --workspace=shared && npm run db:generate --workspace=backend && npm run db:deploy --workspace=backend && npm run build --workspace=backend
+    buildCommand: npm install --include=dev && npm run build --workspace=shared && npm run db:generate --workspace=backend && npm run db:deploy --workspace=backend && npm run build --workspace=backend
     startCommand: npm run start --workspace=backend
     envVars:
       - key: NODE_ENV
@@ -43,7 +50,7 @@ services:
   - type: web
     name: geriatric-grooves-frontend
     env: static
-    buildCommand: npm install && npm run build --workspace=shared && npm run build --workspace=frontend
+    buildCommand: npm install --include=dev && npm run build --workspace=shared && npm run build --workspace=frontend
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
