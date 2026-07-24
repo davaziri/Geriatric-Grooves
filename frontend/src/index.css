@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/*
+ * Senior-mode design tokens. These are runtime-switchable CSS custom
+ * properties (not static Tailwind theme values) because font size and
+ * contrast are per-user preferences toggled at runtime via data attributes
+ * on <html>, set from AccessibilityContext.
+ */
+:root {
+  --text-body: 1.25rem; /* 20px default body text, per accessibility spec */
+  --text-lg: 1.5rem;
+  --text-xl: 1.875rem;
+  --text-sm: 1.05rem; /* still large relative to typical "small" text */
+
+  --color-bg: #fdfaf3;
+  --color-surface: #ffffff;
+  --color-fg: #232323;
+  --color-fg-muted: #4b4b4b;
+  --color-primary: #2f6f4f;
+  --color-primary-contrast: #ffffff;
+  --color-border: #c9c2ac;
+  --color-caution-bg: #fff4e0;
+  --color-caution-fg: #6b4a00;
+  --color-focus-ring: #1a4fb4;
+
+  --tap-target-min: 44px;
+}
+
+[data-font-size="extra_large"] {
+  --text-body: 1.5rem; /* 24px */
+  --text-lg: 1.875rem;
+  --text-xl: 2.25rem;
+  --text-sm: 1.25rem;
+}
+
+[data-contrast="high"] {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-fg: #000000;
+  --color-fg-muted: #000000;
+  --color-primary: #10321f;
+  --color-primary-contrast: #ffffff;
+  --color-border: #000000;
+  --color-caution-bg: #fff0c2;
+  --color-caution-fg: #000000;
+  --color-focus-ring: #000000;
+}
+
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-reduce-motion="false"]) *,
+  html:not([data-reduce-motion="false"]) *::before,
+  html:not([data-reduce-motion="false"]) *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  font-family:
+    "Atkinson Hyperlegible",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+}
+
+/* Every interactive element gets a highly visible focus ring, never relying
+   on color alone (the ring has both offset and thickness). */
+:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+* {
+  box-sizing: border-box;
+}

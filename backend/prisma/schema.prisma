@@ -1,0 +1,116 @@
+// Prisma schema for Geriatric Grooves.
+//
+// Uses Postgres (a free Neon database) for both local dev and production —
+// one shared database keeps things simple for a small personal project, no
+// migration drift between environments to worry about. Every field here
+// uses types available on both SQLite and Postgres
+// (String/Int/Boolean/DateTime) — array-like fields (equipment, tags, etc.)
+// are stored as JSON-encoded strings and (de)serialized in the application
+// layer, a holdover from when this ran on SQLite, which has no native array
+// type; kept as-is since it still works fine on Postgres too.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Exercise {
+  id                      String   @id @default(cuid())
+  name                    String
+  description             String
+  difficulty              Int
+  durationEstimateSeconds Int
+  equipmentRequired       String // JSON-encoded Equipment[]
+  environmentTags         String // JSON-encoded EnvironmentTag[]
+  bodyFocus               String // JSON-encoded BodyFocus[]
+  modifications           String
+  cautions                String?
+  demoMediaUrl            String?
+  createdAt               DateTime @default(now())
+}
+
+model UserProfile {
+  id                       String   @id @default(cuid())
+  email                    String   @unique
+  mobilityLevel            Int      @default(3)
+  equipmentOwned           String   @default("[]") // JSON-encoded Equipment[]
+  knownEnvironmentFeatures String   @default("[]") // JSON-encoded EnvironmentTag[]
+  fontSize                 String   @default("large")
+  highContrast             Boolean  @default(false)
+  reduceMotion             Boolean  @default(false)
+  streakCount              Int      @default(0)
+  longestStreak            Int      @default(0)
+  streakFreezesAvailable   Int      @default(2)
+  lastCompletedDate        String? // YYYY-MM-DD of the last day with a completed exercise
+  freezeRefillMonth        String? // YYYY-MM the current streakFreezesAvailable allotment is for
+  xpTotal                  Int      @default(0)
+  unlockedCosmetics        String   @default("[]") // JSON-encoded string[]
+  onboardingCompleted      Boolean  @default(false)
+  notificationsEnabled     Boolean  @default(false)
+  reminderTime             String? // "HH:MM", 24-hour, server-local time
+  lastReminderSentDate     String? // YYYY-MM-DD, prevents re-sending the same day
+  createdAt                DateTime @default(now())
+
+  sessionLogs        SessionLog[]
+  sessions           Session[]
+  pushSubscriptions  PushSubscription[]
+  environmentScans   EnvironmentScan[]
+}
+
+model SessionLog {
+  id                     String      @id @default(cuid())
+  userId                 String
+  user                   UserProfile @relation(fields: [userId], references: [id])
+  date                   DateTime    @default(now())
+  exercisesCompleted     String      @default("[]") // JSON-encoded string[] of exercise ids
+  selfReportedDifficulty Int?
+  notes                  String?
+}
+
+// Passwordless auth: a short-lived token emailed to the user as a magic link.
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  email     String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+// Server-side session created once a magic link is verified.
+model Session {
+  id        String      @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+}
+
+// A browser's Web Push subscription. A user can have more than one (e.g.
+// phone + laptop), so reminders go out to every device they've enabled.
+model PushSubscription {
+  id        String      @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [id])
+  endpoint  String      @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime    @default(now())
+}
+
+// Only created when the user explicitly opts in to saving their scan photo
+// (default is to analyze and discard — see the environment-scan consent
+// screen). `detected` records the confirmed (possibly user-corrected)
+// ScanDetectionResult, not just the raw model output.
+model EnvironmentScan {
+  id        String      @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [id])
+  imageData String // data URL (base64)
+  detected  String // JSON-encoded ScanDetectionResult
+  createdAt DateTime    @default(now())
+}
